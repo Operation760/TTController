@@ -34,7 +34,7 @@ namespace TTController.Service.Manager
             };
             jsonSettings.Error += (sender, args) => {};
 
-            var converters = typeof(JsonConverter).FindInAssemblies()
+            var converters = typeof(JsonConverter).FindImplementations()
                     .Where(t => t.Namespace?.StartsWith("TTController") ?? false)
                     .Where(t => !t.IsGenericType && !t.IsAbstract)
                     .Select(t => (JsonConverter)Activator.CreateInstance(t));
@@ -80,8 +80,8 @@ namespace TTController.Service.Manager
             {
                 try
                 {
-                    using (var reader = new StreamReader(path))
-                        CurrentConfig = JsonConvert.DeserializeObject<ConfigData>(reader.ReadToEnd());
+                    using var reader = new StreamReader(path);
+                    CurrentConfig = JsonConvert.DeserializeObject<ConfigData>(reader.ReadToEnd());
                 }
                 catch (Exception e)
                 {

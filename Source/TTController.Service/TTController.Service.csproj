@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -14,26 +14,22 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.0.0-preview9.19423.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.0.0-preview9.19423.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="3.0.0-preview9.19423.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="3.0.0-preview9.19423.4" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="NLog" Version="4.6.2" />
+    <PackageReference Include="HidSharp" Version="2.1.0" />
+    <PackageReference Include="NLog" Version="4.6.7" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="1.5.4" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Configuration.Install" />
-    <Reference Include="System.ServiceProcess" />
+    <Resource Include="app.manifest" />
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="TTInstaller.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Update="TTService.cs">
-      <SubType>Component</SubType>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="app.manifest" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\ThirdParty\HidLibrary\src\HidLibrary\HidLibrary.csproj" />
     <ProjectReference Include="..\..\ThirdParty\LibreHardwareMonitor\OpenHardwareMonitorLib.csproj" />
     <ProjectReference Include="..\TTController.Common\TTController.Common.csproj" />
   </ItemGroup>

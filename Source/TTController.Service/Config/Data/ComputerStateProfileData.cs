@@ -7,8 +7,7 @@ namespace TTController.Service.Config.Data
     public enum ComputerStateType
     {
         Boot,
-        Shutdown,
-        Suspend
+        Shutdown
     }
 
     public class ComputerStateProfileData

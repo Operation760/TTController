@@ -1,36 +1,55 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Configuration.Install;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.ServiceProcess;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using NLog;
-using OpenHardwareMonitor.Hardware;
-using TTController.Common.Plugin;
-using TTController.Service.Config.Data;
-using TTController.Service.Hardware;
-using TTController.Service.Manager;
-using TTController.Service.Utils;
+using NLog.Extensions.Logging;
+using System;
+using System.Threading;
 
 namespace TTController.Service
 {
     internal static class Program
     {
-        private static ServiceController Service { get; set; }
-
         private static void Main(string[] args)
         {
-            if (Environment.UserInteractive)
+            if(Environment.UserInteractive)
             {
-                MainMenu();
+                //TODO: menu
+                using var tokenSource = new CancellationTokenSource();
+                var task = CreateHostBuilder(args).Build().RunAsync(tokenSource.Token);
+                Console.ReadKey(true);
+                tokenSource.Cancel();
+                task.Wait();
             }
             else
             {
-                ServiceBase.Run(new TTService());
+                CreateHostBuilder(args).Build().Run();
             }
         }
 
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            new HostBuilder()
+            .UseWindowsService()
+            .UseSystemd()
+            .ConfigureAppConfiguration(configurationBuilder =>
+            {
+                configurationBuilder.SetBasePath(AppContext.BaseDirectory);
+                configurationBuilder.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
+            })
+            .ConfigureLogging((context, loggingBuilder) =>
+            {
+                LogManager.Configuration = new NLogLoggingConfiguration(context.Configuration.GetSection("NLog"));
+                loggingBuilder.ClearProviders();
+                loggingBuilder.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+                loggingBuilder.AddNLog(context.Configuration);
+            })
+            .ConfigureServices(services =>
+            {
+                services.AddHostedService<TTControllerService>();
+            });
+
+        /*
         private static void MainMenu()
         {
             var menu = new MenuPage("Main Menu");
@@ -397,5 +416,6 @@ namespace TTController.Service
             }
         }
         #endregion
+        */
     }
 }

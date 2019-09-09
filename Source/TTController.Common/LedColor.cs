@@ -76,15 +76,15 @@ namespace TTController.Common
             var q = (byte) (value * (1 - f * saturation));
             var t = (byte) (value * (1 - (1 - f) * saturation));
 
-            switch (hi)
+            return hi switch
             {
-                case 0: return new LedColor(v, t, p);
-                case 1: return new LedColor(q, v, p);
-                case 2: return new LedColor(p, v, t);
-                case 3: return new LedColor(p, q, v);
-                case 4: return new LedColor(t, p, v);
-                default: return new LedColor(v, p, q);
-            }
+                0 => new LedColor(v, t, p),
+                1 => new LedColor(q, v, p),
+                2 => new LedColor(p, v, t),
+                3 => new LedColor(p, q, v),
+                4 => new LedColor(t, p, v),
+                _ => new LedColor(v, p, q),
+            };
         }
     }
 }

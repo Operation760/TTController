@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Loader;
 
 namespace TTController.Service.Utils
 {
     public static class Extensions
     {
-        public static IEnumerable<Type> FindInAssemblies(this Type type)
+        public static IEnumerable<Type> FindImplementations(this Type type)
         {
-            var types = AppDomain.CurrentDomain.GetAssemblies()
+            var types = AssemblyLoadContext.All.SelectMany(c => c.Assemblies)
                 .SelectMany(a => a.GetTypes())
                 .Where(t => t.IsClass && !t.IsAbstract);
 
@@ -16,18 +17,6 @@ namespace TTController.Service.Utils
                 return types.Where(t => type.IsAssignableFrom(t));
             else
                 return types.Where(t => t.IsSubclassOf(type));
-        }
-
-        public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> kvp, out TKey key, out TValue value)
-        {
-            key = kvp.Key;
-            value = kvp.Value;
-        }
-
-        public static void Deconstruct<TKey, TElement>(this IGrouping<TKey, TElement> group, out TKey key, out IEnumerable<TElement> elements)
-        {
-            key = group.Key;
-            elements = group.AsEnumerable();
         }
     }
 }

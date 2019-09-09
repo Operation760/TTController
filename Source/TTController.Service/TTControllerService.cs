@@ -1,21 +1,26 @@
+﻿using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.ServiceProcess;
 using NLog;
 using TTController.Common;
-using TTController.Common.Plugin;
 using TTController.Service.Config.Data;
 using TTController.Service.Hardware.Sensor;
 using TTController.Service.Manager;
 using TTController.Service.Utils;
+using System.Threading.Tasks;
+using System.Threading;
+using TTController.Common.Plugin;
+using Microsoft.Extensions.Configuration;
 
 namespace TTController.Service
 {
-    internal class TTService : ServiceBase
+    public class TTControllerService : BackgroundService
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
+        private readonly IConfiguration _configuration;
 
         private DeviceManager _deviceManager;
         private ConfigManager _configManager;
@@ -25,29 +30,18 @@ namespace TTController.Service
         private SpeedControllerManager _speedControllerManager;
         private DataCache _cache;
 
-        protected bool IsDisposed;
-
-        public TTService()
+        public TTControllerService(IConfiguration configuration)
         {
-            ServiceName = TTInstaller.ServiceName;
-
-            CanStop = true;
-            CanShutdown = true;
-            CanHandlePowerEvent = true;
-            CanPauseAndContinue = false;
+            _configuration = configuration;
         }
 
         public bool Initialize()
         {
             Logger.Info($"{new string('=', 64)}");
             Logger.Info("Initializing...");
-            PluginLoader.LoadAll(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins"));
+            PluginLoader.Load(Path.Combine(AppContext.BaseDirectory, "Plugins"));
 
-            const string key = "config-file";
-            if (string.IsNullOrEmpty(AppSettingsHelper.ReadValue(key)))
-                AppSettingsHelper.WriteValue(key, "config.json");
-
-            _configManager = new ConfigManager(AppSettingsHelper.ReadValue(key));
+            _configManager = new ConfigManager(_configuration.GetValue<string>("ProfileConfigFile"));
             if (!_configManager.LoadOrCreateConfig())
                 return false;
 
@@ -101,7 +95,7 @@ namespace TTController.Service
             _timerManager.RegisterTimer(_configManager.CurrentConfig.SensorTimerInterval, SensorTimerCallback);
             _timerManager.RegisterTimer(_configManager.CurrentConfig.DeviceSpeedTimerInterval, DeviceSpeedTimerCallback);
             _timerManager.RegisterTimer(_configManager.CurrentConfig.DeviceRgbTimerInterval, DeviceRgbTimerCallback);
-            if(LogManager.Configuration.LoggingRules.Any(r => r.IsLoggingEnabledForLevel(LogLevel.Debug)))
+            if (LogManager.Configuration.LoggingRules.Any(r => r.IsLoggingEnabledForLevel(LogLevel.Debug)))
                 _timerManager.RegisterTimer(_configManager.CurrentConfig.LoggingTimerInterval, LoggingTimerCallback);
 
             _timerManager.Start();
@@ -111,85 +105,67 @@ namespace TTController.Service
             return true;
         }
 
-        protected override void OnStart(string[] args)
+        private void ApplyComputerStateProfile(ComputerStateType state)
+        {
+            //TODO: check if boot profiles were saved before
+
+            Logger.Info("Applying {0} profiles", state);
+            lock (_deviceManager)
+            {
+                var dirtyControllers = new HashSet<IControllerProxy>();
+                foreach (var profile in _configManager.CurrentConfig.ComputerStateProfiles.Where(p => p.StateType == state))
+                {
+                    foreach (var port in profile.Ports)
+                    {
+                        var controller = _deviceManager.GetController(port);
+                        if (controller == null)
+                            continue;
+
+                        if (profile.Speed.HasValue)
+                            controller.SetSpeed(port.Id, profile.Speed.Value);
+
+                        var effectByte = controller.GetEffectByte(profile.EffectType);
+                        if (effectByte.HasValue && profile.EffectColors != null)
+                            controller.SetRgb(port.Id, effectByte.Value, profile.EffectColors);
+
+                        if (state == ComputerStateType.Boot && (profile.Speed.HasValue || effectByte.HasValue))
+                            dirtyControllers.Add(controller);
+                    }
+                }
+
+                foreach (var controller in dirtyControllers)
+                    controller.SaveProfile();
+            }
+        }
+
+        public override Task StartAsync(CancellationToken cancellationToken)
         {
             try
             {
                 if (!Initialize())
                     throw new Exception("Service failed to start!");
-
-                IsDisposed = false;
             }
             catch (Exception e)
             {
                 Logger.Fatal(e);
-                ExitCode = 1;
-                Stop();
                 throw;
             }
+
+            return base.StartAsync(cancellationToken);
         }
 
-        protected override void OnStop()
+        public override Task StopAsync(CancellationToken cancellationToken) => base.StopAsync(cancellationToken);
+        protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.Delay(-1, stoppingToken);
+
+        public override void Dispose()
         {
-            Finalize();
-            base.OnStop();
-        }
-
-        protected override void OnShutdown()
-        {
-            Finalize();
-            base.OnShutdown();
-        }
-
-        protected void OnSuspend()
-        {
-            Finalize(ComputerStateType.Suspend);
-            base.OnStop();
-        }
-
-        protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus)
-        {
-            Logger.Debug("Power Event: {0}", powerStatus);
-
-            switch (powerStatus)
-            {
-                case PowerBroadcastStatus.QuerySuspendFailed:
-                    Logger.Warn("System failed to enter Suspend state!");
-                    OnStart(null);
-                    break;
-
-                case PowerBroadcastStatus.ResumeAutomatic:
-                    OnStart(null);
-                    break;
-
-                case PowerBroadcastStatus.ResumeCritical:
-                case PowerBroadcastStatus.ResumeSuspend:
-                    break;
-
-                case PowerBroadcastStatus.QuerySuspend:
-                case PowerBroadcastStatus.Suspend:
-                    OnSuspend();
-                    break;
-
-                default:
-                    break;
-            }
-
-            return base.OnPowerEvent(powerStatus);
-        }
-
-        public void Finalize(ComputerStateType state = ComputerStateType.Shutdown)
-        {
-            if (IsDisposed)
-                return;
-
             Logger.Info($"{new string('=', 64)}");
             Logger.Info("Finalizing...");
 
             _timerManager?.Dispose();
 
-            if(_deviceManager != null)
-                ApplyComputerStateProfile(state);
+            if (_deviceManager != null)
+                ApplyComputerStateProfile(ComputerStateType.Shutdown);
 
             _sensorManager?.Dispose();
             _deviceManager?.Dispose();
@@ -207,51 +183,10 @@ namespace TTController.Service
             _configManager = null;
             _cache = null;
 
-            Dispose();
-            IsDisposed = true;
+            base.Dispose();
 
             Logger.Info("Finalizing done!");
             Logger.Info($"{new string('=', 64)}");
-        }
-
-        private void ApplyComputerStateProfile(ComputerStateType state)
-        {
-            if (state == ComputerStateType.Boot)
-            {
-                const string key = "boot-profile-saved";
-                if (AppSettingsHelper.ReadValue<bool>(key))
-                    return;
-
-                AppSettingsHelper.WriteValue(key, true);
-            }
-
-            Logger.Info("Applying computer state profile: {0}", state);
-            lock (_deviceManager)
-            {
-                var dirtyControllers = new HashSet<IControllerProxy>();
-                foreach (var profile in _configManager.CurrentConfig.ComputerStateProfiles.Where(p => p.StateType == state))
-                {
-                    foreach (var port in profile.Ports)
-                    {
-                        var controller = _deviceManager.GetController(port);
-                        if (controller == null)
-                            continue;
-
-                        if(profile.Speed.HasValue)
-                            controller.SetSpeed(port.Id, profile.Speed.Value);
-
-                        var effectByte = controller.GetEffectByte(profile.EffectType);
-                        if (effectByte.HasValue && profile.EffectColors != null)
-                            controller.SetRgb(port.Id, effectByte.Value, profile.EffectColors);
-
-                        if (state == ComputerStateType.Boot && (profile.Speed.HasValue || effectByte.HasValue))
-                            dirtyControllers.Add(controller);
-                    }
-                }
-
-                foreach(var controller in dirtyControllers)
-                    controller.SaveProfile();
-            }
         }
 
         #region Timer Callbacks
@@ -304,7 +239,7 @@ namespace TTController.Service
                     {
                         speedMap = speedController.GenerateSpeeds(profile.Ports, _cache.AsReadOnly());
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Logger.Fatal("{0} failed with {1}", speedController.GetType().Name, e);
                         speedMap = profile.Ports.ToDictionary(p => p, _ => (byte)100);
@@ -369,7 +304,8 @@ namespace TTController.Service
                                     break;
 
                                 var newColors = new List<LedColor>();
-                                for (var i = 0; i < config.LedCount; i++) {
+                                for (var i = 0; i < config.LedCount; i++)
+                                {
                                     var idx = (int)Math.Round((i / (config.LedCount - 1d)) * (colors.Count - 1d));
                                     newColors.Add(colors[idx]);
                                 }
