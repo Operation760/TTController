@@ -29,21 +29,13 @@ namespace TTController.Plugin.ScheduleTrigger
 
         public ScheduleTrigger(ScheduleTriggerConfig config) : base(config)
         {
-            TimeSpan period;
-            if (!Config.UpdateInterval.HasValue)
+            var period = Config.UpdateInterval ?? Config.Scope switch
             {
-                switch (Config.Scope)
-                {
-                    case ScheduleScope.Minute: period = TimeSpan.FromSeconds(1); break;
-                    case ScheduleScope.Hour: period = TimeSpan.FromMinutes(1); break;
-                    case ScheduleScope.Week: period = TimeSpan.FromMinutes(15); break;
-                    default: period = TimeSpan.FromMinutes(1); break;
-                }
-            }
-            else
-            {
-                period = Config.UpdateInterval.Value;
-            }
+                ScheduleScope.Minute => TimeSpan.FromSeconds(1),
+                ScheduleScope.Hour => TimeSpan.FromMinutes(1),
+                ScheduleScope.Week => TimeSpan.FromMinutes(15),
+                _ => TimeSpan.FromMinutes(1),
+            };
 
             _timer = new Timer(TimerCallback, null, TimeSpan.Zero, period);
         }

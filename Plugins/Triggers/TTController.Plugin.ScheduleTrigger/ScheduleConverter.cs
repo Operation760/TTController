@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -30,7 +30,7 @@ namespace TTController.Plugin.ScheduleTrigger
             var array = JArray.Load(reader);
             foreach(var s in array.Values<string>())
             {
-                var parts = s.Split(new string[] { Separator }, StringSplitOptions.RemoveEmptyEntries);
+                var parts = s.Split(Separator, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length != 2)
                     continue;
 
