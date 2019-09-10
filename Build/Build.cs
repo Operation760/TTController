@@ -48,11 +48,11 @@ class Build : NukeBuild
             PluginsDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
             ThirdPartyDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
 
-            // Clean service bin path but leave 'config.json' file
+            // Clean service bin path but leave 'appsettings.profiles.json' file
             if (Directory.Exists(ServiceBinPath))
             {
                 ServiceBinPath.GlobDirectories("*").ForEach(DeleteDirectory);
-                ServiceBinPath.GlobFiles("*").Where(f => !f.ToString().EndsWith("config.json")).ForEach(DeleteFile);
+                ServiceBinPath.GlobFiles("*").Where(f => !f.ToString().EndsWith("appsettings.profiles.json")).ForEach(DeleteFile);
             }
 
             EnsureCleanDirectory(ArtifactsDirectory);
@@ -78,7 +78,7 @@ class Build : NukeBuild
                 .EnableNoRestore());
 
             // Copy plugin files to service bin path      
-            var fileBlacklist = new[] { "TTController.Common", "OpenHardwareMonitorLib", "HidLibrary", "Newtonsoft.Json" };
+            var fileBlacklist = new[] { "TTController.Common", "OpenHardwareMonitorLib", "Newtonsoft.Json" };
             var extensionWhitelist = Configuration == Configuration.Debug ? new[] { ".pdb", ".dll" } : new[] { ".dll" };
             Solution.GetProjects("TTController.Plugin.*")
                 .ForEach(p =>
@@ -98,7 +98,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             var files = Directory.EnumerateFiles(ServiceBinPath, "*", SearchOption.AllDirectories)
-                .Where(f => Path.GetFileName(f) != "config.json"
+                .Where(f => Path.GetFileName(f) != "appsettings.profiles.json"
                          && Path.GetExtension(f) != "InstallState");
 
             if (Configuration != Configuration.Debug)
