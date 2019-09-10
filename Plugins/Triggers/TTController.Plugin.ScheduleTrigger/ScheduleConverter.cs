@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -16,8 +16,19 @@ namespace TTController.Plugin.ScheduleTrigger
         public override void WriteJson(JsonWriter writer, Schedule value, JsonSerializer serializer)
         {
             var array = new JArray();
-            foreach (var (Start, End) in value.Entries)
-                array.Add($"{Start:c}{Separator}{End:c}");
+            foreach (var entry in value.Entries)
+            {
+                var format = entry switch
+                {
+                    var (Start, End) when Start.TotalMinutes < 1 && End.TotalMinutes < 1 => Formats[2],
+                    var (Start, End) when Start.TotalDays < 1 && End.TotalDays < 1 => Formats[1],
+                    _ => Formats[0]
+                };
+
+                var start = entry.Start.ToString(format);
+                var end = entry.End.ToString(format);
+                array.Add($"{start}{Separator}{end}");
+            }
 
             serializer.Serialize(writer, array);
         }
