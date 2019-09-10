@@ -2,8 +2,6 @@
 using OpenHardwareMonitor.Hardware;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using TTController.Service.Utils;
 
 namespace TTController.Service.Hardware
 {
@@ -14,7 +12,7 @@ namespace TTController.Service.Hardware
         private readonly Computer _computer;
         private readonly List<ISensor> _sensors;
 
-        public IReadOnlyList<ISensor> Sensors => _sensors.AsReadOnly();
+        public IReadOnlyList<ISensor> Sensors => _sensors;
 
         public OpenHardwareMonitorFacade()
         {

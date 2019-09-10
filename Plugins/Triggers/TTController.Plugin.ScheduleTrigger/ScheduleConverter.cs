@@ -3,8 +3,6 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TTController.Plugin.ScheduleTrigger
 {
@@ -49,11 +47,13 @@ namespace TTController.Plugin.ScheduleTrigger
                     && TimeSpan.TryParseExact(parts[1], Formats, null, out var end))
                 {
                     if (start < TimeSpan.Zero || end < TimeSpan.Zero)
-                        throw new JsonReaderException($"Invalid negative time: \"{s}\"");
+                        throw new JsonReaderException($"Invalid negative entry: \"{s}\"");
                     if (start >= end)
                         throw new JsonReaderException($"Start time must be before End time: \"{s}\"");
                     if (start.Days > 7 || end.Days > 7)
                         throw new JsonReaderException($"Invalid day number: \"{s}\"");
+                    if (entries.Any(e => (e.Start >= start && e.Start <= end) || (e.End >= start && e.End <= end)))
+                        throw new JsonReaderException($"Invalid overlapping entry: \"{s}\"");
 
                     entries.Add((start, end));
                 }
