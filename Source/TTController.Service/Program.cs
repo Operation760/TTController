@@ -29,7 +29,7 @@ namespace TTController.Service
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
-            new HostBuilder()
+            Host.CreateDefaultBuilder(args)
             .UseWindowsService()
             .UseSystemd()
             .ConfigureAppConfiguration(configurationBuilder =>
