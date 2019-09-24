@@ -18,5 +18,10 @@ namespace TTController.Service.Utils
             else
                 return types.Where(t => t.IsSubclassOf(type));
         }
+        public static IEnumerable<T> RotateLeft<T>(this IEnumerable<T> enumberable, int rotate) 
+            => enumberable.Skip(rotate).Concat(enumberable.Take(rotate));
+
+        public static IEnumerable<T> RotateRight<T>(this IEnumerable<T> enumberable, int rotate)
+            => enumberable.RotateLeft(enumberable.Count() - rotate);
     }
 }
