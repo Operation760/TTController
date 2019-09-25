@@ -17,6 +17,8 @@ namespace TTController.Service.Manager
         private readonly List<IHidDeviceProxy> _deviceProxies;
         private readonly List<IControllerProxy> _controllers;
 
+        public IReadOnlyList<IControllerProxy> Controllers => _controllers;
+
         public DeviceManager()
         {
             Logger.Info("Creating Device Manager...");
@@ -48,7 +50,7 @@ namespace TTController.Service.Manager
                     var controller = (IControllerProxy) Activator.CreateInstance(definition.ControllerProxyType, deviceProxy, definition);
                     if (!controller.Init())
                     {
-                        Logger.Warn("Failed to initialize \"{0}\" controller! [{1}, {2}]", definition.Name, device.Attributes.VendorHexId, device.Attributes.ProductHexId);
+                        Logger.Warn("Failed to initialize \"{0}\" controller! [{1}, {2}]", definition.Name, device.VendorID, device.ProductID);
 
                         deviceProxy.Dispose();
                         continue;

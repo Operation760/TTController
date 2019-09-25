@@ -57,7 +57,7 @@ namespace TTController.Plugin.PingPongEffect
                 {
                     result.Add(port, Enumerable.Range(0, ledCount).Select(_ => new LedColor()).ToList());
                 }
-                else if ((tBottom >= globalStart && tBottom <= globalEnd) 
+                else if ((tBottom >= globalStart && tBottom <= globalEnd)
                     || (tTop >= globalStart && tTop <= globalEnd)
                     || (tBottom < globalStart && tTop > globalEnd))
                 {
