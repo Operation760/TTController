@@ -1,0 +1,144 @@
+{
+  "Profiles": [
+    {
+      "Name": "Top",
+      "Guid": "60e691b3-e536-4699-986c-3888054fd41b",
+      "Ports": [
+        [9802, 8101, 1],
+        [9802, 8101, 2],
+        [9802, 8101, 3]
+      ],
+      "SpeedControllers": [
+        {
+          "Type": "PwmSpeedController",
+          "Config": {
+            "CurvePoints": [
+              [50, 20],
+              [60, 25],
+              [70, 40],
+              [80, 75],
+              [85, 100]
+            ],
+            "Sensors": ["/intelcpu/0/temperature/6"],
+            "MinimumChange": 4,
+            "MaximumChange": 8,
+            "Trigger": {
+              "Type": "AlwaysTrigger"
+            }
+          }
+        }
+      ],
+      "Effects": [
+        {
+          "Type": "RazerConnectEffect",
+          "Config": {
+            "Trigger": {
+              "Type": "AlwaysTrigger"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Side",
+      "Guid": "281e7b25-aaf0-4413-b104-a65d80c324d3",
+      "Ports": [
+        [9802, 8101, 4],
+        [9802, 8101, 5],
+        [9802, 8102, 1]
+      ],
+      "SpeedControllers": [
+        {
+          "Type": "PwmSpeedController",
+          "Config": {
+            "CurvePoints": [
+              [70, 40],
+              [80, 75],
+              [85, 100]
+            ],
+            "Sensors": ["/intelcpu/0/temperature/6"],
+            "MinimumChange": 4,
+            "MaximumChange": 8,
+            "Trigger": {
+              "Type": "AlwaysTrigger"
+            }
+          }
+        }
+      ],
+      "Effects": [
+        {
+          "Type": "RazerConnectEffect",
+          "Config": {
+            "Trigger": {
+              "Type": "AlwaysTrigger"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "Name": "Bottom",
+      "Guid": "11c2ed64-4c21-4f1a-ac5d-81ff0047a2b1",
+      "Ports": [
+        [9802, 8102, 2],
+        [9802, 8102, 3],
+        [9802, 8102, 4]
+      ],
+      "SpeedControllers": [
+        {
+          "Type": "PwmSpeedController",
+          "Config": {
+            "CurvePoints": [
+              [70, 40],
+              [80, 75],
+              [85, 100]
+            ],
+            "Sensors": ["/gpu/0/temperature/0"],
+            "MinimumChange": 4,
+            "MaximumChange": 8,
+            "Trigger": {
+              "Type": "AlwaysTrigger"
+            }
+          }
+        }
+      ],
+      "Effects": [
+        {
+          "Type": "RazerConnectEffect",
+          "Config": {
+            "Trigger": {
+              "Type": "AlwaysTrigger"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "PortConfigs": [
+    {
+      "Ports": [
+        [9802, 8101, 1],
+        [9802, 8101, 2],
+        [9802, 8101, 3],
+        [9802, 8101, 4],
+      	[9802, 8101, 5],
+        [9802, 8102, 1],
+        [9802, 8102, 2],
+        [9802, 8102, 3],
+        [9802, 8102, 4]
+      ],
+      "Config": {
+        "LedCount": 12,
+        "LedCountHandling": "Lerp"
+      }
+    }
+  ],
+  "SensorConfigs": [
+    {
+      "Sensors": ["/intelcpu/0/temperature/6"],
+      "Config": {
+        "CriticalValue": 90
+      }
+    }
+  ]
+}
